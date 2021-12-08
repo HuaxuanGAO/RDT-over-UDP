@@ -40,6 +40,25 @@ def initHeader(fin):
     print(header)
     return header
 
+def calc_checksum(data):
+    # According to RFC 1071 
+    # https://www.rfc-editor.org/rfc/rfc1071
+    s = 0  
+    for i in range(0, len(data), 2):
+        a = data[i]
+        b = data[i+1]
+        s = s + (a+(b << 8))
+        s = s + (s >> 16)
+        s = ~s & 0xffff
+    return s
+
+def generate_packet(header, data):
+    checksum = calc_checksum(header + data)
+    old_header = struct.unpack("!HHLLBBHHH", header)            
+    src, dest, seq_num, ack_num, header_len, controls, rcv_window, prev_checksum, urgent_ptr = old_header
+    new_header = struct.pack('!HHLLBBHHH', src, dest, seq_num, ack_num, header_len, controls, rcv_window, checksum, urgent_ptr)
+    return new_header + data
+
 def sendDataUntilACK(data, clientSocket):
     ACK = None
     while not ACK:
@@ -67,7 +86,7 @@ with open('infile.txt') as openfileobject:
         print(line)
         header = initHeader(fin=0)
         data = line.encode()
-        packet = header + data
+        packet = generate_packet(header, data)
         sendDataUntilACK(packet, clientSocket)
 
 header = initHeader(fin=1)
