@@ -2,19 +2,7 @@ from socket import *
 from multiprocessing import Process
 import struct
 
-# def createSocket(): 
-HOST = '127.0.0.1'
-PORT = 8080
-ADDR = (HOST, PORT)
-
-serverName = "127.0.1.1"
-serverPort = 41192
-
-clientSocket = socket(AF_INET, SOCK_DGRAM)
-clientSocket.bind(ADDR)
-clientSocket.settimeout(1)
-
-def initHeader():
+def initHeader(fin):
     src_port = 8080
     dest_port = 8081
     seq_num = 0
@@ -30,7 +18,7 @@ def initHeader():
     PSH = (0 << 3)
     RST = (0 << 2)
     SYN = (1 << 1)
-    FIN = (0)
+    FIN = (fin)
   
     rcv_window = 80
     checksum = 0
@@ -63,13 +51,25 @@ def sendDataUntilACK(data, clientSocket):
             print("Not ACKed")
             continue
 
-# clientSocket = createSocket()
-header = initHeader()
-sendDataUntilACK(header, clientSocket)
-# with open('infile.txt') as openfileobject:
-#     for line in openfileobject:
-#         print(line)
-#         sendDataUntilACK(line.encode(), clientSocket)
+HOST = '127.0.0.1'
+PORT = 8080
+ADDR = (HOST, PORT)
 
-# sendDataUntilACK("FIN".encode(), clientSocket)
+serverName = "127.0.1.1"
+serverPort = 41192
+
+clientSocket = socket(AF_INET, SOCK_DGRAM)
+clientSocket.bind(ADDR)
+clientSocket.settimeout(1)
+
+with open('infile.txt') as openfileobject:
+    for line in openfileobject:
+        print(line)
+        header = initHeader(fin=0)
+        data = line.encode()
+        packet = header + data
+        sendDataUntilACK(packet, clientSocket)
+
+header = initHeader(fin=1)
+sendDataUntilACK(header, clientSocket)
 clientSocket.close()
