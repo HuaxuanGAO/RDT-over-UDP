@@ -1,7 +1,8 @@
 from socket import *
 from multiprocessing import Process
-import time
+import struct
 
+# def createSocket(): 
 HOST = '127.0.0.1'
 PORT = 8080
 ADDR = (HOST, PORT)
@@ -13,17 +14,62 @@ clientSocket = socket(AF_INET, SOCK_DGRAM)
 clientSocket.bind(ADDR)
 clientSocket.settimeout(1)
 
+def initHeader():
+    src_port = 8080
+    dest_port = 8081
+    seq_num = 0
+    ack_num = 0
+    header_len = 20
+    
+    RSV = (0 << 9)
+    NOC = (0 << 8)
+    CWR = (0 << 7)
+    ECE = (0 << 6)
+    URG = (0 << 5)
+    ACK = (0 << 4)
+    PSH = (0 << 3)
+    RST = (0 << 2)
+    SYN = (1 << 1)
+    FIN = (0)
+  
+    rcv_window = 80
+    checksum = 0
+    urgent_ptr = 0
+
+    contorls = RSV + NOC + CWR + ECE + URG + ACK + PSH + RST + SYN + FIN
+
+    header = struct.pack('!HHLLBBHHH', # Data Structure Representation
+        src_port,   # Source IP
+        dest_port,    # Destination IP
+        seq_num,    # Sequence
+        ack_num,  # Acknownlegment Sequence
+        header_len,   # Header Length
+        contorls ,    # Contorls
+        rcv_window,   # Windows
+        checksum,  # cheksum
+        urgent_ptr # Urgent Pointer
+    )
+    print(header)
+    return header
+
 def sendDataUntilACK(data, clientSocket):
     ACK = None
     while not ACK:
         try:
-            clientSocket.sendto(msg_encode, (serverName, serverPort))
+            clientSocket.sendto(data, (serverName, serverPort))
             ACK, serverAddr = clientSocket.recvfrom(2048)
             print(ACK.decode())
         except:
+            print("Not ACKed")
             continue
 
-message = "Hello Socket!"
-msg_encode = message.encode()
-sendDataUntilACK(msg_encode, clientSocket)
+# clientSocket = createSocket()
+header = initHeader()
+sendDataUntilACK(header, clientSocket)
+# with open('infile.txt') as openfileobject:
+#     for line in openfileobject:
+#         print(line)
+#         sendDataUntilACK(line.encode(), clientSocket)
+
+# sendDataUntilACK("FIN".encode(), clientSocket)
 clientSocket.close()
