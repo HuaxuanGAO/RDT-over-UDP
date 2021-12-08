@@ -15,14 +15,13 @@ while True:
             header = struct.unpack("!HHLLBBHHH", packet[:20])            
             src, dest, seq_num, ack_num, header_len, controls, rcv_window, checksum, urgent_ptr = header            
             print(header)
-            ACK = "ACK"
-            serverSocket.sendto(ACK.encode(), ACKAddr)
             if controls & 1 == 1:
                 outfile.close()
+                serverSocket.sendto("FIN".encode(), ACKAddr)
                 break
             else:       
                 print("write")  
                 data = packet[20:].decode()       
                 outfile.write(data)
-                outfile.flush()
+                serverSocket.sendto("ACK".encode(), ACKAddr)
                 
