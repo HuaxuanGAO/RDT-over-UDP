@@ -1,15 +1,79 @@
-1
-2
-3
-4
-5
-1
-2
-3
-4
-5
-1
-2
-3
-4
-5
+Programming Assignment 2
+Due Date: Friday, December 10th, 11:59PM
+In this programming assignment, you will be writing the sending and receiving transport-level
+code for implementing a simplified version of TCP. Your version will use a network loss, delay
+and corruption link emulator provided by us. Data is exchanged via UDP, i.e., you will be running
+TCP "on top of" UDP. The network can drop, corrupt, reorder and delay packets. You will need
+to run one copy of the emulator, as acknowledgements are assumed to arrive without delay or
+loss. Please use version 1.7 of the emulator.
+You can run your sender, receiver and the link emulator either on one, two or three machines.
+The link emulator acts like a "proxy", i.e., the sender is configured to send packets there and the
+proxy is configured to send packets to the receiver. The receiver process sends its
+acknowledgements directly to the data sender.
+For testing, run the following command:
+newudpl -iinput_host_address -ooutput_host_address -L 50Programming Assignment 2
+Due Date: Friday, December 10th, 11:59PM
+In this programming assignment, you will be writing the sending and receiving transport-level
+code for implementing a simplified version of TCP. Your version will use a network loss, delay
+and corruption link emulator provided by us. Data is exchanged via UDP, i.e., you will be running
+TCP "on top of" UDP. The network can drop, corrupt, reorder and delay packets. You will need
+to run one copy of the emulator, as acknowledgements are assumed to arrive without delay or
+loss. Please use version 1.7 of the emulator.
+You can run your sender, receiver and the link emulator either on one, two or three machines.
+The link emulator acts like a "proxy", i.e., the sender is configured to send packets there and the
+proxy is configured to send packets to the receiver. The receiver process sends its
+acknowledgements directly to the data sender.
+For testing, run the following command:
+newudpl -iinput_host_address -ooutput_host_address -L 50Programming Assignment 2
+Due Date: Friday, December 10th, 11:59PM
+In this programming assignment, you will be writing the sending and receiving transport-level
+code for implementing a simplified version of TCP. Your version will use a network loss, delay
+and corruption link emulator provided by us. Data is exchanged via UDP, i.e., you will be running
+TCP "on top of" UDP. The network can drop, corrupt, reorder and delay packets. You will need
+to run one copy of the emulator, as acknowledgements are assumed to arrive without delay or
+loss. Please use version 1.7 of the emulator.
+You can run your sender, receiver and the link emulator either on one, two or three machines.
+The link emulator acts like a "proxy", i.e., the sender is configured to send packets there and the
+proxy is configured to send packets to the receiver. The receiver process sends its
+acknowledgements directly to the data sender.
+For testing, run the following command:
+newudpl -iinput_host_address -ooutput_host_address -L 50Programming Assignment 2
+Due Date: Friday, December 10th, 11:59PM
+In this programming assignment, you will be writing the sending and receiving transport-level
+code for implementing a simplified version of TCP. Your version will use a network loss, delay
+and corruption link emulator provided by us. Data is exchanged via UDP, i.e., you will be running
+TCP "on top of" UDP. The network can drop, corrupt, reorder and delay packets. You will need
+to run one copy of the emulator, as acknowledgements are assumed to arrive without delay or
+loss. Please use version 1.7 of the emulator.
+You can run your sender, receiver and the link emulator either on one, two or three machines.
+The link emulator acts like a "proxy", i.e., the sender is configured to send packets there and the
+proxy is configured to send packets to the receiver. The receiver process sends its
+acknowledgements directly to the data sender.
+For testing, run the following command:
+newudpl -iinput_host_address -ooutput_host_address -L 50Programming Assignment 2
+Due Date: Friday, December 10th, 11:59PM
+In this programming assignment, you will be writing the sending and receiving transport-level
+code for implementing a simplified version of TCP. Your version will use a network loss, delay
+and corruption link emulator provided by us. Data is exchanged via UDP, i.e., you will be running
+TCP "on top of" UDP. The network can drop, corrupt, reorder and delay packets. You will need
+to run one copy of the emulator, as acknowledgements are assumed to arrive without delay or
+loss. Please use version 1.7 of the emulator.
+You can run your sender, receiver and the link emulator either on one, two or three machines.
+The link emulator acts like a "proxy", i.e., the sender is configured to send packets there and the
+proxy is configured to send packets to the receiver. The receiver process sends its
+acknowledgements directly to the data sender.
+For testing, run the following command:
+newudpl -iinput_host_address -ooutput_host_address -L 50Programming Assignment 2
+Due Date: Friday, December 10th, 11:59PM
+In this programming assignment, you will be writing the sending and receiving transport-level
+code for implementing a simplified version of TCP. Your version will use a network loss, delay
+and corruption link emulator provided by us. Data is exchanged via UDP, i.e., you will be running
+TCP "on top of" UDP. The network can drop, corrupt, reorder and delay packets. You will need
+to run one copy of the emulator, as acknowledgements are assumed to arrive without delay or
+loss. Please use version 1.7 of the emulator.
+You can run your sender, receiver and the link emulator either on one, two or three machines.
+The link emulator acts like a "proxy", i.e., the sender is configured to send packets there and the
+proxy is configured to send packets to the receiver. The receiver process sends its
+acknowledgements directly to the data sender.
+For testing, run the following command:
+newudpl -iinput_host_address -ooutput_host_address -L 50

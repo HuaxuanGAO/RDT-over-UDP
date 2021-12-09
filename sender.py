@@ -1,5 +1,5 @@
 from socket import *
-from multiprocessing import Process
+import multiprocessing
 import struct
 
 def initHeader(fin):
@@ -41,18 +41,17 @@ def initHeader(fin):
     return header
 
 def calc_checksum(data):
-    # According to RFC 1071 
     # https://www.rfc-editor.org/rfc/rfc1071
     s = 0  
     for i in range(0, len(data), 2):
-        a = data[i]
-        b = data[i+1]
+        a = data[i%len(data)]
+        b = data[(i+1)%len(data)]
         s = s + (a+(b << 8))
         s = s + (s >> 16)
         s = ~s & 0xffff
     return s
 
-def generate_packet(header, data):
+def generate_packet(header, data=b''):        
     checksum = calc_checksum(header + data)
     old_header = struct.unpack("!HHLLBBHHH", header)            
     src, dest, seq_num, ack_num, header_len, controls, rcv_window, prev_checksum, urgent_ptr = old_header
@@ -81,14 +80,23 @@ clientSocket = socket(AF_INET, SOCK_DGRAM)
 clientSocket.bind(ADDR)
 clientSocket.settimeout(1)
 
-with open('infile.txt') as openfileobject:
-    for line in openfileobject:
-        print(line)
-        header = initHeader(fin=0)
-        data = line.encode()
-        packet = generate_packet(header, data)
-        sendDataUntilACK(packet, clientSocket)
+CHUNK_SIZE = 556 # 576-20
+SEQ_NUM = 0
 
-header = initHeader(fin=1)
-sendDataUntilACK(header, clientSocket)
+with open('infile.txt') as infile:
+    eof = False
+    while not eof:
+        chunk = infile.read(CHUNK_SIZE)
+        if not chunk:
+            eof = True
+            header = initHeader(fin=1)
+            packet = generate_packet(header)
+            sendDataUntilACK(packet, clientSocket)
+            break
+        else:
+            header = initHeader(fin=0)
+            data = chunk.encode()
+            packet = generate_packet(header, data)
+            sendDataUntilACK(packet, clientSocket)
+
 clientSocket.close()
