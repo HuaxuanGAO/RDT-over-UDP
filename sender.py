@@ -3,6 +3,7 @@ import multiprocessing
 import struct
 
 def initHeader(fin):
+    # initialize the header
     src_port = 8080
     dest_port = 8081
     seq_num = 0
@@ -82,21 +83,31 @@ clientSocket.settimeout(1)
 
 CHUNK_SIZE = 556 # 576-20
 SEQ_NUM = 0
+WINDOW_SIZE = 3
 
 with open('infile.txt') as infile:
-    eof = False
-    while not eof:
+    EOF = False
+    def read_send(seq_count):
+        print(seq_count)
+        infile.seek(seq_count*CHUNK_SIZE)
         chunk = infile.read(CHUNK_SIZE)
         if not chunk:
-            eof = True
-            header = initHeader(fin=1)
-            packet = generate_packet(header)
-            sendDataUntilACK(packet, clientSocket)
-            break
+            return True
         else:
             header = initHeader(fin=0)
             data = chunk.encode()
             packet = generate_packet(header, data)
             sendDataUntilACK(packet, clientSocket)
+            return False
+    k = 0    
+    while not EOF:
+        with multiprocessing.Pool(WINDOW_SIZE) as p:
+            res = p.map(read_send, [i for i in range(k*WINDOW_SIZE, (k+1)*WINDOW_SIZE)])
+            if any(res):
+                break
+        k += 1
 
+header = initHeader(fin=1)
+packet = generate_packet(header)
+sendDataUntilACK(packet, clientSocket)
 clientSocket.close()
