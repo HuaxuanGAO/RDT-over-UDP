@@ -2,6 +2,7 @@ from socket import *
 import multiprocessing
 import struct
 import sys
+import time
 
 """
 this format is used to encode TCP header
@@ -72,11 +73,18 @@ def generate_packet(header, data=b''):
 # keep sending with timeout until ACKed
 def sendDataUntilACK(remote_IP, remote_port, packet, clientSocket, seq = 0, data_len = 0):
     ACK = False
+    RTT, t1, t2 = None, 0, 0
     while not ACK:
         try:
             print("sending packet with sequence number: " + str(seq))
+            # do not calculate for resend packets
+            if not RTT:
+                t1 = time.time()
             clientSocket.sendto(packet, (remote_IP, remote_port))
             res, serverAddr = clientSocket.recvfrom(2048)
+            if not RTT:
+                t2 = time.time()
+                RTT = t2 - t1           
             print("received ACK of " + res.decode())
             #  already ACKed
             if int(res.decode()) >= seq + data_len:                
@@ -84,6 +92,7 @@ def sendDataUntilACK(remote_IP, remote_port, packet, clientSocket, seq = 0, data
         except:
             # "Not ACKed"
             continue
+    return RTT
 
 def take_input():
     try:
@@ -97,22 +106,33 @@ def take_input():
         exit("Usage: $python3 sender.py [filename] [destination_IP] [destination_port] [window_size] [ack_port]")
     return filename, remote_IP, remote_port, window_size, ack_port
 
+def update_timeout(estimatedRTT, deviation, sampleRTT, clientSocket):
+    alpha = 0.125
+    beta = 0.25
+    estimatedRTT = (1-alpha)*estimatedRTT+ alpha*sampleRTT
+    deviation= (1-beta)*deviation + beta*abs(sampleRTT-estimatedRTT)
+    timeout= estimatedRTT + 4*deviation
+    print("New timeout: " + str(timeout) + " sec")
+    clientSocket.settimeout(timeout)
+    return estimatedRTT, deviation
+
 if __name__ == "__main__":
     filename, remote_IP, remote_port, window_size, ack_port = take_input()
 
     ADDR = ('', ack_port)   
-    TIMEOUT = 1
+    INIT_TIMEOUT = 1    
     clientSocket = socket(AF_INET, SOCK_DGRAM)
     clientSocket.bind(ADDR)
-    clientSocket.settimeout(TIMEOUT)
+    clientSocket.settimeout(INIT_TIMEOUT)
 
     MAX_SEGMENT_SIZE = 576
     HEADER_LEN = 20
     chunk_size = MAX_SEGMENT_SIZE - HEADER_LEN
     # sendFile(filename, remote_IP, remote_port, CHUNK_SIZE, window_size, clientSocket)
     with open(filename, 'rb') as infile:
-        EOF = False
+        EOF = False    
         def read_send(seq_count):
+            estimatedRTT, deviation = 0.05, 0.05
             # go to the desired location
             infile.seek(seq_count*chunk_size) 
             # read fixed length data 
@@ -123,7 +143,9 @@ if __name__ == "__main__":
             else:
                 header = initHeader(fin=0, seq = seq_count * chunk_size)     
                 packet = generate_packet(header, chunk)
-                sendDataUntilACK(remote_IP, remote_port, packet, clientSocket, seq_count * chunk_size, data_len = len(chunk))
+                sampleRTT = sendDataUntilACK(remote_IP, remote_port, packet, clientSocket, seq_count * chunk_size, data_len = len(chunk))
+                # update timeout by new sample RTT
+                estimatedRTT, deviation = update_timeout(estimatedRTT, deviation, sampleRTT, clientSocket)
                 return False
         k = 0    
         while not EOF:
