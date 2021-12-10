@@ -6,6 +6,8 @@ serverSocket = socket(AF_INET, SOCK_DGRAM)
 serverSocket.bind(('', port))
 print("Listening to %d"%port)
 
+PACK_FORMAT = '!HHLLBBHHH'
+
 ACKAddr = ("127.0.0.1", 8080)
 
 def calc_checksum(data):
@@ -23,15 +25,14 @@ MAX_SEGMENT_SIZE = 576
 expected_seq = 0
 
 while True:
-    with open('outfile.txt', 'a') as outfile:
+    with open('outfile.txt', 'wb') as outfile:
         while True:
             packet, clientAddr = serverSocket.recvfrom(2048)
-            header = struct.unpack("!HHLLBBHHH", packet[:20])
+            header = struct.unpack(PACK_FORMAT, packet[:20])
             data = packet[20:]
             chunk_size = len(data)            
             src, dest, seq_num, ack_num, header_len, controls, rcv_window, checksum, urgent_ptr = header 
-            print(header)            
-            old_header = struct.pack('!HHLLBBHHH', src, dest, seq_num, ack_num, header_len, controls, rcv_window, 0, urgent_ptr)
+            old_header = struct.pack(PACK_FORMAT, src, dest, seq_num, ack_num, header_len, controls, rcv_window, 0, urgent_ptr)
             if checksum != calc_checksum(old_header+data):
                 break
             # FIN received 
@@ -45,7 +46,6 @@ while True:
             else:
                 expected_seq += chunk_size
                 print(str(seq_num) + " received, expecting: " + str(expected_seq))
-                data = data.decode()       
                 outfile.write(data)
                 outfile.flush()
                 serverSocket.sendto(str(expected_seq).encode(), ACKAddr)
