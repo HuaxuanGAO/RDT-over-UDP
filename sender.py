@@ -1,12 +1,13 @@
 from socket import *
 import multiprocessing
 import struct
+from builtins import bytes
 
-def initHeader(fin):
+def initHeader(fin = 0, seq = 0):
     # initialize the header
     src_port = 8080
     dest_port = 8081
-    seq_num = 0
+    seq_num = seq
     ack_num = 0
     header_len = 20
     
@@ -59,15 +60,19 @@ def generate_packet(header, data=b''):
     new_header = struct.pack('!HHLLBBHHH', src, dest, seq_num, ack_num, header_len, controls, rcv_window, checksum, urgent_ptr)
     return new_header + data
 
-def sendDataUntilACK(data, clientSocket):
-    ACK = None
+def sendDataUntilACK(packet, clientSocket, seq = 0, data_len = 0):
+    ACK = False
     while not ACK:
         try:
-            clientSocket.sendto(data, (serverName, serverPort))
-            ACK, serverAddr = clientSocket.recvfrom(2048)
-            print(ACK.decode())
+            print("sending " + str(seq))
+            clientSocket.sendto(packet, (serverName, serverPort))
+            res, serverAddr = clientSocket.recvfrom(2048)
+            print(res.decode() + " vs " + str(seq))
+            #  already ACKed
+            if int(res.decode()) >= seq + data_len:                
+                ACK = True
         except:
-            print("Not ACKed")
+            # print("Not ACKed")
             continue
 
 HOST = '127.0.0.1'
@@ -77,27 +82,27 @@ ADDR = (HOST, PORT)
 serverName = "127.0.1.1"
 serverPort = 41192
 
-clientSocket = socket(AF_INET, SOCK_DGRAM)
-clientSocket.bind(ADDR)
-clientSocket.settimeout(1)
-
 CHUNK_SIZE = 556 # 576-20
 SEQ_NUM = 0
-WINDOW_SIZE = 3
+WINDOW_SIZE = 5
+TIMEOUT = 1
+clientSocket = socket(AF_INET, SOCK_DGRAM)
+clientSocket.bind(ADDR)
+clientSocket.settimeout(TIMEOUT)
 
-with open('infile.txt') as infile:
+
+
+with open('infile.txt', 'rb') as infile:
     EOF = False
     def read_send(seq_count):
-        print(seq_count)
         infile.seek(seq_count*CHUNK_SIZE)
         chunk = infile.read(CHUNK_SIZE)
         if not chunk:
             return True
         else:
-            header = initHeader(fin=0)
-            data = chunk.encode()
-            packet = generate_packet(header, data)
-            sendDataUntilACK(packet, clientSocket)
+            header = initHeader(fin=0, seq = seq_count * CHUNK_SIZE)     
+            packet = generate_packet(header, chunk)
+            sendDataUntilACK(packet, clientSocket, seq_count * CHUNK_SIZE, data_len = len(chunk))
             return False
     k = 0    
     while not EOF:
