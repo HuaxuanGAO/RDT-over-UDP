@@ -1,7 +1,7 @@
 from socket import *
 import multiprocessing
 import struct
-from builtins import bytes
+import sys
 
 """
 this format is used to encode TCP header
@@ -47,7 +47,6 @@ def initHeader(fin = 0, seq = 0):
         checksum,  # cheksum
         urgent_ptr # Urgent Pointer
     )
-    print(header)
     return header
 
 # calculate the checksum
@@ -65,69 +64,79 @@ def calc_checksum(data):
 # calculate checksum and put it in the header
 def generate_packet(header, data=b''):        
     checksum = calc_checksum(header + data)
-    old_header = struct.unpack(, header)            
+    old_header = struct.unpack(PACK_FORMAT, header)            
     src, dest, seq_num, ack_num, header_len, controls, rcv_window, prev_checksum, urgent_ptr = old_header
     new_header = struct.pack(PACK_FORMAT, src, dest, seq_num, ack_num, header_len, controls, rcv_window, checksum, urgent_ptr)
     return new_header + data
 
 # keep sending with timeout until ACKed
-def sendDataUntilACK(packet, clientSocket, seq = 0, data_len = 0):
+def sendDataUntilACK(remote_IP, remote_port, packet, clientSocket, seq = 0, data_len = 0):
     ACK = False
     while not ACK:
         try:
             print("sending packet with sequence number: " + str(seq))
-            clientSocket.sendto(packet, (serverName, serverPort))
+            clientSocket.sendto(packet, (remote_IP, remote_port))
             res, serverAddr = clientSocket.recvfrom(2048)
             print("received ACK of " + res.decode())
             #  already ACKed
             if int(res.decode()) >= seq + data_len:                
                 ACK = True
         except:
-            # print("Not ACKed")
+            # "Not ACKed"
             continue
 
-HOST = '127.0.0.1'
-PORT = 8080
-ADDR = (HOST, PORT)
+def take_input():
+    try:
+        print(sys.argv)
+        filename = sys.argv[1]
+        remote_IP = sys.argv[2]
+        remote_port = int(sys.argv[3])
+        window_size = int(sys.argv[4])
+        ack_port = int(sys.argv[5])
+    except:
+        exit("Usage: $python3 sender.py [filename] [destination_IP] [destination_port] [window_size] [ack_port]")
+    return filename, remote_IP, remote_port, window_size, ack_port
 
-serverName = "127.0.1.1"
-serverPort = 41192
+if __name__ == "__main__":
+    filename, remote_IP, remote_port, window_size, ack_port = take_input()
 
-CHUNK_SIZE = 556 # 576-20
-SEQ_NUM = 0
-WINDOW_SIZE = 5
-TIMEOUT = 1
-clientSocket = socket(AF_INET, SOCK_DGRAM)
-clientSocket.bind(ADDR)
-clientSocket.settimeout(TIMEOUT)
+    ADDR = ('', ack_port)   
+    TIMEOUT = 1
+    clientSocket = socket(AF_INET, SOCK_DGRAM)
+    clientSocket.bind(ADDR)
+    clientSocket.settimeout(TIMEOUT)
 
-with open('infile.txt', 'rb') as infile:
-    EOF = False
-    def read_send(seq_count):
-        # go to the desired location
-        infile.seek(seq_count*CHUNK_SIZE) 
-        # read fixed length data 
-        chunk = infile.read(CHUNK_SIZE)
-        # EOF reached
-        if not chunk:
-            return True
-        else:
-            header = initHeader(fin=0, seq = seq_count * CHUNK_SIZE)     
-            packet = generate_packet(header, chunk)
-            sendDataUntilACK(packet, clientSocket, seq_count * CHUNK_SIZE, data_len = len(chunk))
-            return False
-    k = 0    
-    while not EOF:
-        # Create a thread pool of size of the window
-        with multiprocessing.Pool(WINDOW_SIZE) as p:
-            # generate the sequence counter
-            res = p.map(read_send, [i for i in range(k*WINDOW_SIZE, (k+1)*WINDOW_SIZE)])
-            # if any item is True in the result, that means we finished reading
-            if any(res):
-                break
-        k += 1
-# sending the FIN request
-header = initHeader(fin=1)
-packet = generate_packet(header)
-sendDataUntilACK(packet, clientSocket)
-clientSocket.close()
+    MAX_SEGMENT_SIZE = 576
+    HEADER_LEN = 20
+    chunk_size = MAX_SEGMENT_SIZE - HEADER_LEN
+    # sendFile(filename, remote_IP, remote_port, CHUNK_SIZE, window_size, clientSocket)
+    with open(filename, 'rb') as infile:
+        EOF = False
+        def read_send(seq_count):
+            # go to the desired location
+            infile.seek(seq_count*chunk_size) 
+            # read fixed length data 
+            chunk = infile.read(chunk_size)
+            # EOF reached
+            if not chunk:
+                return True
+            else:
+                header = initHeader(fin=0, seq = seq_count * chunk_size)     
+                packet = generate_packet(header, chunk)
+                sendDataUntilACK(remote_IP, remote_port, packet, clientSocket, seq_count * chunk_size, data_len = len(chunk))
+                return False
+        k = 0    
+        while not EOF:
+            # Create a thread pool of size of the window
+            with multiprocessing.Pool(window_size) as p:
+                # generate the sequence counter
+                res = p.map(read_send, [i for i in range(k*window_size, (k+1)*window_size)])
+                # if any item is True in the result, that means we finished reading
+                if any(res):
+                    break
+            k += 1
+    # sending the FIN request
+    header = initHeader(fin=1)
+    packet = generate_packet(header)
+    sendDataUntilACK(remote_IP, remote_port, packet, clientSocket)
+    clientSocket.close()
