@@ -11,6 +11,8 @@ B | unsigned char
 L | unsigned long
 """ 
 PACK_FORMAT = '!HHLLBBHHH'
+MAX_SEGMENT_SIZE = 576
+HEADER_LEN = 20
 
 # initialize the header
 def initHeader(fin = 0, seq = 0):
@@ -101,10 +103,13 @@ def take_input():
         remote_IP = sys.argv[2]
         remote_port = int(sys.argv[3])
         window_size = int(sys.argv[4])
-        ack_port = int(sys.argv[5])
+        chunk_size = int(sys.argv[5])
+        ack_port = int(sys.argv[6])
+        if chunk_size > MAX_SEGMENT_SIZE - HEADER_LEN:
+            exit("The specified chunk size is larger than the max segment size without header (<=556)")
     except:
-        exit("Usage: $python3 sender.py [filename] [destination_IP] [destination_port] [window_size] [ack_port]")
-    return filename, remote_IP, remote_port, window_size, ack_port
+        exit("Usage: $python3 sender.py [filename] [destination_IP] [destination_port] [window_size] [chunk_size] [ack_port]")
+    return filename, remote_IP, remote_port, window_size, chunk_size, ack_port
 
 def update_timeout(estimatedRTT, deviation, sampleRTT, clientSocket):
     alpha = 0.125
@@ -117,7 +122,7 @@ def update_timeout(estimatedRTT, deviation, sampleRTT, clientSocket):
     return estimatedRTT, deviation
 
 if __name__ == "__main__":
-    filename, remote_IP, remote_port, window_size, ack_port = take_input()
+    filename, remote_IP, remote_port, window_size, chunk_size, ack_port = take_input()
 
     ADDR = ('', ack_port)   
     INIT_TIMEOUT = 1    
@@ -125,9 +130,6 @@ if __name__ == "__main__":
     clientSocket.bind(ADDR)
     clientSocket.settimeout(INIT_TIMEOUT)
 
-    MAX_SEGMENT_SIZE = 576
-    HEADER_LEN = 20
-    chunk_size = MAX_SEGMENT_SIZE - HEADER_LEN
     # sendFile(filename, remote_IP, remote_port, CHUNK_SIZE, window_size, clientSocket)
     with open(filename, 'rb') as infile:
         EOF = False    

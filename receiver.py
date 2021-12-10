@@ -3,6 +3,7 @@ import struct
 import sys
 
 PACK_FORMAT = '!HHLLBBHHH'
+MAX_SEGMENT_SIZE = 576
 
 def calc_checksum(data):
     # https://www.rfc-editor.org/rfc/rfc1071
@@ -33,8 +34,7 @@ if __name__ == "__main__":
     serverSocket.bind(('', listen_port))
     print("Listening to %d"%listen_port)
 
-    ACKAddr = (ack_IP, ack_port)
-    MAX_SEGMENT_SIZE = 576
+    ACKAddr = (ack_IP, ack_port)    
     HEADER_LEN = 20
     expected_seq = 0
 
