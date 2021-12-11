@@ -15,12 +15,7 @@ MAX_SEGMENT_SIZE = 576
 HEADER_LEN = 20
 
 # initialize the header
-def initHeader(fin = 0, seq = 0):
-    src_port = 8080
-    dest_port = 8081
-    seq_num = seq
-    ack_num = 0
-    header_len = 20
+def initHeader(src_port, dest_port, seq_num, ack_num, header_len, fin):
     #  place the controls using bit shift
     RSV = (0 << 9)
     NOC = (0 << 8)
@@ -111,6 +106,7 @@ def take_input():
         exit("Usage: $python3 sender.py [filename] [destination_IP] [destination_port] [window_size] [chunk_size] [ack_port]")
     return filename, remote_IP, remote_port, window_size, chunk_size, ack_port
 
+# dynamically calculate the timeout
 def update_timeout(estimatedRTT, deviation, sampleRTT, clientSocket):
     alpha = 0.125
     beta = 0.25
@@ -143,7 +139,7 @@ if __name__ == "__main__":
             if not chunk:
                 return True
             else:
-                header = initHeader(fin=0, seq = seq_count * chunk_size)     
+                header = initHeader(ack_port, remote_port, seq_count * chunk_size, (seq_count + 1) * chunk_size, HEADER_LEN, fin=0)
                 packet = generate_packet(header, chunk)
                 sampleRTT = sendDataUntilACK(remote_IP, remote_port, packet, clientSocket, seq_count * chunk_size, data_len = len(chunk))
                 # update timeout by new sample RTT
@@ -160,7 +156,7 @@ if __name__ == "__main__":
                     break
             k += 1
     # sending the FIN request
-    header = initHeader(fin=1)
+    header = initHeader(ack_port, remote_port, 0, 0, HEADER_LEN, fin=1)
     packet = generate_packet(header)
     sendDataUntilACK(remote_IP, remote_port, packet, clientSocket)
     clientSocket.close()

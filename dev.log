@@ -1,9 +1,0 @@
-make connection
-./newudpl -i 127.0.0.1:8080 -o 127.0.0.1:8081 -L 50
-recver get data
-send ACK directly to sender
-
-socket set timeout
-resend until ACK
-
-read/write file
