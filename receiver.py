@@ -57,7 +57,6 @@ if __name__ == "__main__":
                 expected_seq = 0
                 break
             if seq_num != expected_seq:
-                print("Received out of order packet, dump")
                 serverSocket.sendto(str(expected_seq).encode(), ACKAddr)
             else:
                 expected_seq += chunk_size

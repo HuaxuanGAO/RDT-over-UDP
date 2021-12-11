@@ -35,8 +35,8 @@ def initHeader(src_port, dest_port, seq_num, ack_num, header_len, fin):
     contorls = RSV + NOC + CWR + ECE + URG + ACK + PSH + RST + SYN + FIN
 
     header = struct.pack(PACK_FORMAT, # Data Structure Representation
-        src_port,   # Source IP
-        dest_port,    # Destination IP
+        src_port,   # Source port
+        dest_port,    # Destination port
         seq_num,    # Sequence
         ack_num,  # Acknownlegment Sequence
         header_len,   # Header Length
@@ -68,12 +68,15 @@ def generate_packet(header, data=b''):
     return new_header + data
 
 # keep sending with timeout until ACKed
-def sendDataUntilACK(remote_IP, remote_port, packet, clientSocket, seq = 0, data_len = 0):
+def sendDataUntilACK(remote_IP, remote_port, packet, clientSocket, seq = 0, data_len = 0, fin=0):
     ACK = False
     RTT, t1, t2 = None, 0, 0
     while not ACK:
         try:
-            print("sending packet with sequence number: " + str(seq))
+            if fin==0:
+                print("sending packet with sequence number: " + str(seq))
+            else:
+                print("sending FIN request")
             # do not calculate for resend packets
             if not RTT:
                 t1 = time.time()
@@ -81,8 +84,11 @@ def sendDataUntilACK(remote_IP, remote_port, packet, clientSocket, seq = 0, data
             res, serverAddr = clientSocket.recvfrom(2048)
             if not RTT:
                 t2 = time.time()
-                RTT = t2 - t1           
-            print("received ACK of " + res.decode())
+                RTT = t2 - t1     
+            if fin==0:        
+                print("received ACK of " + res.decode())
+            else:
+                print("FIN ACKed")
             #  already ACKed
             if int(res.decode()) >= seq + data_len:                
                 ACK = True
@@ -141,7 +147,7 @@ if __name__ == "__main__":
             else:
                 header = initHeader(ack_port, remote_port, seq_count * chunk_size, (seq_count + 1) * chunk_size, HEADER_LEN, fin=0)
                 packet = generate_packet(header, chunk)
-                sampleRTT = sendDataUntilACK(remote_IP, remote_port, packet, clientSocket, seq_count * chunk_size, data_len = len(chunk))
+                sampleRTT = sendDataUntilACK(remote_IP, remote_port, packet, clientSocket, seq_count * chunk_size, data_len = len(chunk), fin=0)
                 # update timeout by new sample RTT
                 estimatedRTT, deviation = update_timeout(estimatedRTT, deviation, sampleRTT, clientSocket)
                 return False
@@ -158,5 +164,5 @@ if __name__ == "__main__":
     # sending the FIN request
     header = initHeader(ack_port, remote_port, 0, 0, HEADER_LEN, fin=1)
     packet = generate_packet(header)
-    sendDataUntilACK(remote_IP, remote_port, packet, clientSocket)
+    sendDataUntilACK(remote_IP, remote_port, packet, clientSocket, fin=1)
     clientSocket.close()
